@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영화 티어리스트</title>
+<style>
+  :root {
+    --bg-color: #1a1a1a;
+    --container-bg: #2a2a2a;
+    --card-bg: #3a3a3a;
+    --text-color: #ffffff;
+    --border-color: #444;
+  }
+  
+  body { 
+    font-family: 'Pretendard', 'Malgun Gothic', sans-serif; 
+    background: var(--bg-color); 
+    color: var(--text-color); 
+    margin: 0; 
+    padding: 20px; 
+  }
+  
+  .header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; 
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+  }
+  
+  .header h1 { margin: 0; font-size: 24px; }
+  
+  button { 
+    padding: 8px 16px; 
+    cursor: pointer; 
+    border: none; 
+    border-radius: 4px; 
+    background: #555; 
+    color: white;
+    font-weight: bold;
+    transition: background 0.2s;
+  }
+  
+  button:hover { background: #777; }
+  
+  .reset-btn { background: #d32f2f; }
+  .reset-btn:hover { background: #f44336; }
+  
+  .add-movie-form { 
+    background: var(--container-bg); 
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-bottom: 20px; 
+    display: flex; 
+    flex-wrap: wrap;
+    gap: 10px; 
+    align-items: center; 
+  }
+  
+  .add-movie-form input { 
+    padding: 8px 12px; 
+    border-radius: 4px; 
+    border: 1px solid var(--border-color); 
+    background: #1e1e1e; 
+    color: white; 
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .tier-row { 
+    display: flex; 
+    background: var(--container-bg); 
+    margin-bottom: 10px; 
+    border-radius: 8px; 
+    overflow: hidden; 
+    min-height: 110px; 
+    border: 1px solid var(--border-color);
+  }
+  
+  .tier-label { 
+    width: 100px; 
+    flex-shrink: 0;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    font-size: 28px; 
+    font-weight: 900; 
+    color: #111; 
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.3);
+  }
+  
+  /* 티어별 색상 */
+  .tier-S { background: #ff7f7f; }
+  .tier-A { background: #ffbf7f; }
+  .tier-B { background: #ffff7f; }
+  .tier-C { background: #7fff7f; }
+  .tier-D { background: #7fbfff; }
+  .tier-uncategorized { background: #999999; }
+  
+  .dropzone { 
+    flex: 1; 
+    padding: 10px; 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 10px; 
+    align-content: flex-start; 
+    min-width: 0;
+  }
+  
+  .movie-card { 
+    background: var(--card-bg); 
+    border: 1px solid #555; 
+    border-radius: 6px; 
+    padding: 10px 10px 10px 12px; 
+    cursor: grab; 
+    position: relative; 
+    width: 130px; 
+    height: 70px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  
+  .movie-card:hover {
+    border-color: #777;
+  }
+  
+  .movie-card:active { 
+    cursor: grabbing; 
+  }
+  
+  .movie-card.dragging { 
+    opacity: 0.4; 
+    transform: scale(0.95);
+  }
+  
+  .movie-title { 
+    font-weight: bold; 
+    font-size: 15px; 
+    margin-bottom: 6px; 
+    word-break: keep-all;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 15px;
+  }
+  
+  .movie-info { 
+    font-size: 12px; 
+    color: #bbb; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .delete-btn { 
+    position: absolute; 
+    top: 6px; 
+    right: 6px; 
+    background: transparent; 
+    color: #888; 
+    border: none; 
+    padding: 0; 
+    font-size: 14px; 
+    line-height: 1;
+    cursor: pointer; 
+  }
+  
+  .delete-btn:hover { 
+    color: #ff5252; 
+    background: transparent;
+  }
+  
+  h2 {
+    font-size: 18px;
+    margin-top: 30px;
+    margin-bottom: 10px;
+    padding-left: 5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎬 영화 티어리스트</h1>
+  <button class="reset-btn" onclick="resetTierList()">🔄 처음으로 되돌리기</button>
+</div>
+
+<!-- 영화 추가 폼 -->
+<form class="add-movie-form" onsubmit="addMovie(event)">
+  <input type="text" id="newTitle" placeholder="영화 제목 (필수)" required autocomplete="off">
+  <input type="number" id="newYear" placeholder="개봉연도 (선택)" autocomplete="off">
+  <input type="text" id="newDirector" placeholder="감독 (선택)" autocomplete="off">
+  <button type="submit">➕ 새 영화 추가</button>
+</form>
+
+<!-- 등급 칸 (S ~ D) -->
+<div id="tier-container">
+  <div class="tier-row">
+    <div class="tier-label tier-S">S</div>
+    <div class="dropzone" data-tier="S"></div>
+  </div>
+  <div class="tier-row">
+    <div class="tier-label tier-A">A</div>
+    <div class="dropzone" data-tier="A"></div>
+  </div>
+  <div class="tier-row">
+    <div class="tier-label tier-B">B</div>
+    <div class="dropzone" data-tier="B"></div>
+  </div>
+  <div class="tier-row">
+    <div class="tier-label tier-C">C</div>
+    <div class="dropzone" data-tier="C"></div>
+  </div>
+  <div class="tier-row">
+    <div class="tier-label tier-D">D</div>
+    <div class="dropzone" data-tier="D"></div>
+  </div>
+</div>
+
+<!-- 미분류 칸 -->
+<h2>미분류 영화</h2>
+<div class="tier-row">
+  <div class="tier-label tier-uncategorized">미분류</div>
+  <div class="dropzone" data-tier="uncategorized"></div>
+</div>
+
+<script>
+  // 초기 제공 데이터 10편
+  const initialMovies = [
+    { id: 'm1', title: '기생충', year: '2019', director: '봉준호', tier: 'uncategorized' },
+    { id: 'm2', title: '올드보이', year: '2003', director: '박찬욱', tier: 'uncategorized' },
+    { id: 'm3', title: '살인의 추억', year: '2003', director: '봉준호', tier: 'uncategorized' },
+    { id: 'm4', title: '괴물', year: '2006', director: '봉준호', tier: 'uncategorized' },
+    { id: 'm5', title: '부산행', year: '2016', director: '연상호', tier: 'uncategorized' },
+    { id: 'm6', title: '범죄도시', year: '2017', director: '강윤성', tier: 'uncategorized' },
+    { id: 'm7', title: '극한직업', year: '2019', director: '이병헌', tier: 'uncategorized' },
+    { id: 'm8', title: '헤어질 결심', year: '2022', director: '박찬욱', tier: 'uncategorized' },
+    { id: 'm9', title: '서울의 봄', year: '2023', director: '김성수', tier: 'uncategorized' },
+    { id: 'm10', title: '파묘', year: '2024', director: '장재현', tier: 'uncategorized' }
+  ];
+
+  // 로컬 스토리지에서 불러오거나 초기 데이터 사용
+  let movies = JSON.parse(localStorage.getItem('movieTierList'));
+  if (!movies || movies.length === 0) {
+    // 깊은 복사로 초기화
+    movies = JSON.parse(JSON.stringify(initialMovies));
+  }
+
+  // 화면에 영화 카드 그리기
+  function render() {
+    // 모든 dropzone 비우기
+    document.querySelectorAll('.dropzone').forEach(zone => zone.innerHTML = '');
+    
+    // 영화 데이터 기반으로 카드 생성 및 배치
+    movies.forEach(movie => {
+      const card = document.createElement('div');
+      card.className = 'movie-card';
+      card.draggable = true;
+      card.id = movie.id;
+      
+      // 화면 표시용 HTML
+      const displayYear = movie.year || '-';
+      const displayDirector = movie.director || '-';
+      
+      card.innerHTML = `
+        <button class="delete-btn" onclick="deleteMovie('${movie.id}')" title="삭제">✖</button>
+        <div class="movie-title" title="${movie.title}">${movie.title}</div>
+        <div class="movie-info" title="${displayYear} · ${displayDirector}">${displayYear} · ${displayDirector}</div>
+      `;
+      
+      // 드래그 이벤트 연결
+      card.addEventListener('dragstart', () => card.classList.add('dragging'));
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        updateStateFromDOM(); // 드래그가 끝나면 바뀐 위치를 상태에 저장
+      });
+
+      // 데이터에 적힌 티어에 맞게 삽입
+      const zone = document.querySelector(`.dropzone[data-tier="${movie.tier}"]`);
+      if (zone) zone.appendChild(card);
+    });
+  }
+
+  // DOM의 현재 구조를 읽어서 movies 배열을 업데이트하고 로컬 스토리지에 저장
+  function updateStateFromDOM() {
+    const newMovies = [];
+    document.querySelectorAll('.dropzone').forEach(zone => {
+      const tier = zone.getAttribute('data-tier');
+      zone.querySelectorAll('.movie-card').forEach(card => {
+        // 기존 movies 배열에서 데이터 찾기
+        const existingData = movies.find(m => m.id === card.id);
+        if (existingData) {
+          existingData.tier = tier; // 티어만 현재 위치로 업데이트
+          newMovies.push(existingData);
+        }
+      });
+    });
+    movies = newMovies;
+    localStorage.setItem('movieTierList', JSON.stringify(movies));
+  }
+
+  // 드래그 앤 드롭 영역 설정
+  document.querySelectorAll('.dropzone').forEach(zone => {
+    zone.addEventListener('dragover', e => {
+      e.preventDefault(); // 드롭 허용
+      const draggingCard = document.querySelector('.dragging');
+      if (!draggingCard) return;
+
+      const afterElement = getDragAfterElement(zone, e.clientX, e.clientY);
+      if (afterElement == null) {
+        zone.appendChild(draggingCard);
+      } else {
+        zone.insertBefore(draggingCard, afterElement);
+      }
+    });
+  });
+
+  // 드래그 중인 카드가 어느 카드 앞에 위치해야 하는지 계산 (Flex-wrap 대응)
+  function getDragAfterElement(container, x, y) {
+    const draggableElements = [...container.querySelectorAll('.movie-card:not(.dragging)')];
+    
+    return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      // 마우스가 카드의 세로 범위 내에 있는지 확인 (같은 줄 판단)
+      const isSameRow = (y >= box.top - 10 && y <= box.bottom + 10);
+      
+      if (isSameRow) {
+        // 카드의 중앙을 기준으로 마우스가 왼쪽에 있으면 그 카드 앞에 삽입
+        const offset = x - (box.left + box.width / 2);
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        }
+      }
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  // 새 영화 추가
+  function addMovie(e) {
+    e.preventDefault();
+    const titleInput = document.getElementById('newTitle');
+    const yearInput = document.getElementById('newYear');
+    const directorInput = document.getElementById('newDirector');
+    
+    const title = titleInput.value.trim();
+    if(!title) return;
+
+    const newMovie = {
+      id: 'm_' + Date.now(), // 고유 ID 부여
+      title: title,
+      year: yearInput.value.trim(),
+      director: directorInput.value.trim(),
+      tier: 'uncategorized' // 항상 미분류로 추가
+    };
+    
+    movies.push(newMovie);
+    localStorage.setItem('movieTierList', JSON.stringify(movies));
+    
+    // 입력창 초기화
+    titleInput.value = '';
+    yearInput.value = '';
+    directorInput.value = '';
+    
+    render();
+  }
+
+  // 영화 삭제
+  function deleteMovie(id) {
+    if (confirm('이 영화를 삭제하시겠습니까?')) {
+      movies = movies.filter(m => m.id !== id);
+      localStorage.setItem('movieTierList', JSON.stringify(movies));
+      render();
+    }
+  }
+
+  // 처음으로 되돌리기
+  function resetTierList() {
+    if (confirm('모든 변경사항(추가/삭제/이동)이 사라지고 처음 상태로 되돌아갑니다. 계속하시겠습니까?')) {
+      movies = JSON.parse(JSON.stringify(initialMovies)); // 초기 데이터로 복구
+      localStorage.setItem('movieTierList', JSON.stringify(movies));
+      render();
+    }
+  }
+
+  // 페이지 로드 시 최초 렌더링
+  document.addEventListener('DOMContentLoaded', render);
+</script>
+</body>
+</html>
